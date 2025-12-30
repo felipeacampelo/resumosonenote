@@ -69,7 +69,7 @@ npm run dev
    - `http://localhost:8000/api/auth/google/callback/`
 7. Copie Client ID e Client Secret para `.env`
 
-## 📝 Próximos Passos
+##  Próximos Passos
 
 - [ ] Recuperação de senha
 - [ ] Verificação de email

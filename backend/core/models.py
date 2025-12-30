@@ -106,27 +106,27 @@ class Assunto(TimeStampedModel):
     # Metadados da Matriz (importados do Excel)
     link_resumos = models.CharField(
         'Aula dos Resumos OneNote',
-        max_length=500,
+        max_length=2000,
         blank=True,
         help_text='Link para aula dos Resumos OneNote'
     )
     link_questoes_cebraspe = models.CharField(
         'Caderno TEC Concursos - Cebraspe',
-        max_length=500,
+        max_length=2000,
         blank=True,
         help_text='Link para caderno de questões Cebraspe'
     )
     link_questoes_fgv = models.CharField(
         'Caderno de Questões FGV',
-        max_length=500,
+        max_length=2000,
         blank=True,
         help_text='Link para caderno de questões FGV'
     )
     dica = models.TextField(
         'Dica',
-        max_length=500,
+        max_length=2000,
         blank=True,
-        help_text='Dica sobre o assunto (máx. 500 caracteres)'
+        help_text='Dica sobre o assunto'
     )
     
     class Meta:
