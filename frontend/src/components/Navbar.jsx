@@ -1,6 +1,6 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LogOut, Database, FileText, User } from 'lucide-react';
+import { LogOut, Database, FileText, User, BookOpen, Users, LayoutDashboard, Trophy } from 'lucide-react';
 import logo from '../assets/Logo ResumosON - 2.png';
 
 const Navbar = () => {
@@ -51,19 +51,54 @@ const Navbar = () => {
               <Database className="h-5 w-5" />
               <span>Matriz de Assuntos</span>
             </Link>
+            <Link
+              to="/admin/alunos"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                isActive('/admin/alunos') || location.pathname.startsWith('/admin/aluno/')
+                  ? 'bg-purple-50 text-purple-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Users className="h-5 w-5" />
+              <span>Alunos</span>
+            </Link>
+            <Link
+              to="/admin/ranking"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                isActive('/admin/ranking')
+                  ? 'bg-purple-50 text-purple-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <Trophy className="h-5 w-5" />
+              <span>Ranking</span>
+            </Link>
           </>
         ) : (
-          <Link
-            to="/meus-planos"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-              isActive('/meus-planos') || location.pathname.startsWith('/plano/')
-                ? 'bg-purple-50 text-purple-700 font-medium'
-                : 'text-gray-700 hover:bg-gray-100'
-            }`}
-          >
-            <FileText className="h-5 w-5" />
-            <span>Meus Planos</span>
-          </Link>
+          <>
+            <Link
+              to="/meu-dashboard"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                isActive('/meu-dashboard')
+                  ? 'bg-purple-50 text-purple-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <LayoutDashboard className="h-5 w-5" />
+              <span>Dashboard</span>
+            </Link>
+            <Link
+              to="/escolher-plano"
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                isActive('/escolher-plano') || location.pathname.startsWith('/meus-estudos')
+                  ? 'bg-purple-50 text-purple-700 font-medium'
+                  : 'text-gray-700 hover:bg-gray-100'
+              }`}
+            >
+              <BookOpen className="h-5 w-5" />
+              <span>Meus Estudos</span>
+            </Link>
+          </>
         )}
       </nav>
 

@@ -9,7 +9,10 @@ from .models import (
     Subassunto,
     Concurso,
     MapaAssunto,
-    MetadadosAssunto
+    MetadadosAssunto,
+    ProgressoAssunto,
+    SessaoEstudo,
+    PlanoAluno
 )
 
 
@@ -101,3 +104,69 @@ class MetadadosAssuntoAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
     )
+
+
+class SessaoEstudoInline(admin.TabularInline):
+    """Inline para exibir sessões de estudo dentro do progresso"""
+    model = SessaoEstudo
+    extra = 0
+    readonly_fields = ['percentual_acerto', 'created_at']
+    fields = ['data', 'tempo_minutos', 'questoes_feitas', 'questoes_acertadas', 'percentual_acerto', 'observacoes']
+
+
+@admin.register(ProgressoAssunto)
+class ProgressoAssuntoAdmin(admin.ModelAdmin):
+    """Admin para Progresso dos Assuntos"""
+    list_display = ['usuario', 'mapa_assunto', 'estudado', 'tempo_total_minutos', 'questoes_feitas', 'percentual_acerto', 'ultima_sessao']
+    list_filter = ['estudado', 'mapa_assunto__concurso', 'ultima_sessao']
+    search_fields = ['usuario__email', 'mapa_assunto__assunto__nome']
+    ordering = ['-ultima_sessao', '-updated_at']
+    readonly_fields = ['tempo_total_minutos', 'questoes_feitas', 'questoes_acertadas', 'percentual_acerto', 'tempo_total_horas', 'created_at', 'updated_at']
+    inlines = [SessaoEstudoInline]
+    
+    fieldsets = (
+        ('Informações Básicas', {
+            'fields': ('usuario', 'mapa_assunto', 'estudado')
+        }),
+        ('Estatísticas (calculadas automaticamente)', {
+            'fields': ('tempo_total_minutos', 'tempo_total_horas', 'questoes_feitas', 'questoes_acertadas', 'percentual_acerto', 'ultima_sessao')
+        }),
+        ('Auditoria', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(SessaoEstudo)
+class SessaoEstudoAdmin(admin.ModelAdmin):
+    """Admin para Sessões de Estudo"""
+    list_display = ['progresso', 'data', 'tempo_minutos', 'questoes_feitas', 'questoes_acertadas', 'percentual_acerto']
+    list_filter = ['data', 'progresso__mapa_assunto__concurso']
+    search_fields = ['progresso__usuario__email', 'progresso__mapa_assunto__assunto__nome']
+    ordering = ['-data', '-created_at']
+    readonly_fields = ['percentual_acerto', 'created_at', 'updated_at']
+    
+    fieldsets = (
+        ('Informações Básicas', {
+            'fields': ('progresso', 'data')
+        }),
+        ('Dados da Sessão', {
+            'fields': ('tempo_minutos', 'questoes_feitas', 'questoes_acertadas', 'percentual_acerto', 'observacoes')
+        }),
+        ('Auditoria', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+
+
+@admin.register(PlanoAluno)
+class PlanoAlunoAdmin(admin.ModelAdmin):
+    """Admin para Planos dos Alunos"""
+    list_display = ['usuario', 'concurso', 'ativo', 'data_inicio', 'created_at']
+    list_filter = ['ativo', 'concurso', 'data_inicio']
+    search_fields = ['usuario__email', 'usuario__first_name', 'concurso__nome']
+    ordering = ['-ativo', '-data_inicio']
+    readonly_fields = ['data_inicio', 'created_at', 'updated_at']
+    raw_id_fields = ['usuario', 'concurso']

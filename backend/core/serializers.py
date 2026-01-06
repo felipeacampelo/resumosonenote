@@ -11,7 +11,10 @@ from .models import (
     Subassunto,
     Concurso,
     MapaAssunto,
-    MetadadosAssunto
+    MetadadosAssunto,
+    ProgressoAssunto,
+    SessaoEstudo,
+    PlanoAluno
 )
 
 
@@ -283,3 +286,160 @@ class MatrizImportSerializer(serializers.Serializer):
             )
         
         return value
+
+
+class SessaoEstudoSerializer(serializers.ModelSerializer):
+    """
+    Serializer para Sessões de Estudo.
+    
+    Registra cada sessão individual de estudo do usuário.
+    """
+    percentual_acerto = serializers.FloatField(read_only=True)
+    mapa_assunto_nome = serializers.CharField(
+        source='progresso.mapa_assunto.nome_completo',
+        read_only=True
+    )
+    
+    class Meta:
+        model = SessaoEstudo
+        fields = [
+            'id', 'progresso', 'data',
+            'tempo_minutos', 'questoes_feitas', 'questoes_acertadas',
+            'percentual_acerto', 'observacoes',
+            'mapa_assunto_nome',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'percentual_acerto', 'created_at', 'updated_at']
+    
+    def validate(self, data):
+        """Validação customizada"""
+        questoes_feitas = data.get('questoes_feitas') or 0
+        questoes_acertadas = data.get('questoes_acertadas') or 0
+        
+        # Só validar se ambos forem maiores que 0
+        if questoes_feitas > 0 and questoes_acertadas > questoes_feitas:
+            raise serializers.ValidationError({
+                'questoes_acertadas': 'Não pode ser maior que questões feitas'
+            })
+        
+        return data
+
+
+class ProgressoAssuntoSerializer(serializers.ModelSerializer):
+    """
+    Serializer para Progresso do Assunto.
+    
+    Inclui informações agregadas e sessões de estudo.
+    """
+    percentual_acerto = serializers.FloatField(read_only=True)
+    tempo_total_horas = serializers.FloatField(read_only=True)
+    sessoes = SessaoEstudoSerializer(many=True, read_only=True)
+    total_sessoes = serializers.SerializerMethodField()
+    
+    def get_total_sessoes(self, obj):
+        return obj.sessoes.count()
+    
+    # Informações do assunto
+    mapa_assunto_nome = serializers.CharField(
+        source='mapa_assunto.nome_completo',
+        read_only=True
+    )
+    disciplina_nome = serializers.CharField(
+        source='mapa_assunto.assunto.disciplina.nome',
+        read_only=True
+    )
+    concurso_nome = serializers.CharField(
+        source='mapa_assunto.concurso.nome',
+        read_only=True
+    )
+    concurso_sigla = serializers.CharField(
+        source='mapa_assunto.concurso.sigla',
+        read_only=True
+    )
+    
+    class Meta:
+        model = ProgressoAssunto
+        fields = [
+            'id', 'usuario', 'mapa_assunto',
+            'mapa_assunto_nome', 'disciplina_nome',
+            'concurso_nome', 'concurso_sigla',
+            'estudado', 'tempo_total_minutos', 'tempo_total_horas',
+            'questoes_feitas', 'questoes_acertadas', 'percentual_acerto',
+            'ultima_sessao', 'sessoes', 'total_sessoes',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = [
+            'id', 'usuario', 'percentual_acerto', 'tempo_total_horas',
+            'tempo_total_minutos', 'questoes_feitas', 'questoes_acertadas',
+            'ultima_sessao', 'created_at', 'updated_at'
+        ]
+
+
+class ProgressoAssuntoListSerializer(serializers.ModelSerializer):
+    """
+    Serializer simplificado para listagem de Progressos.
+    
+    Sem sessões aninhadas para melhor performance.
+    """
+    percentual_acerto = serializers.FloatField(read_only=True)
+    tempo_total_horas = serializers.FloatField(read_only=True)
+    mapa_assunto_nome = serializers.CharField(
+        source='mapa_assunto.nome_completo',
+        read_only=True
+    )
+    disciplina_nome = serializers.CharField(
+        source='mapa_assunto.assunto.disciplina.nome',
+        read_only=True
+    )
+    
+    class Meta:
+        model = ProgressoAssunto
+        fields = [
+            'id', 'mapa_assunto', 'mapa_assunto_nome', 'disciplina_nome',
+            'estudado', 'tempo_total_minutos', 'tempo_total_horas',
+            'questoes_feitas', 'questoes_acertadas', 'percentual_acerto',
+            'ultima_sessao'
+        ]
+        read_only_fields = ['id', 'percentual_acerto', 'tempo_total_horas']
+
+
+class PlanoAlunoSerializer(serializers.ModelSerializer):
+    """
+    Serializer para Plano do Aluno.
+    """
+    concurso_nome = serializers.CharField(source='concurso.nome', read_only=True)
+    concurso_sigla = serializers.CharField(source='concurso.sigla', read_only=True)
+    usuario_nome = serializers.SerializerMethodField()
+    usuario_email = serializers.CharField(source='usuario.email', read_only=True)
+    
+    class Meta:
+        model = PlanoAluno
+        fields = [
+            'id', 'usuario', 'usuario_nome', 'usuario_email',
+            'concurso', 'concurso_nome', 'concurso_sigla',
+            'ativo', 'data_inicio',
+            'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'usuario', 'data_inicio', 'created_at', 'updated_at']
+    
+    def get_usuario_nome(self, obj):
+        return f"{obj.usuario.first_name} {obj.usuario.last_name}".strip() or obj.usuario.email
+
+
+class AlunoEstatisticasSerializer(serializers.Serializer):
+    """
+    Serializer para estatísticas de um aluno.
+    """
+    usuario_id = serializers.IntegerField()
+    usuario_nome = serializers.CharField()
+    usuario_email = serializers.CharField()
+    plano_nome = serializers.CharField(allow_null=True)
+    plano_sigla = serializers.CharField(allow_null=True)
+    total_assuntos = serializers.IntegerField()
+    assuntos_estudados = serializers.IntegerField()
+    percentual_concluido = serializers.FloatField()
+    tempo_total_horas = serializers.FloatField()
+    questoes_feitas = serializers.IntegerField()
+    questoes_acertadas = serializers.IntegerField()
+    percentual_acerto = serializers.FloatField()
+    ultima_atividade = serializers.DateField(allow_null=True)

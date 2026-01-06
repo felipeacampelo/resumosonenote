@@ -137,15 +137,15 @@ class MatrizImportService:
                 if criado:
                     self.estatisticas['assuntos_criados'] += 1
                 else:
-                    # Atualizar metadados se o assunto já existe
+                    # Atualizar metadados se o assunto já existe (sempre sobrescreve)
                     atualizado = False
-                    if link_resumos and not assunto.link_resumos:
+                    if link_resumos and assunto.link_resumos != link_resumos:
                         assunto.link_resumos = link_resumos
                         atualizado = True
-                    if link_questoes_cebraspe and not assunto.link_questoes_cebraspe:
+                    if link_questoes_cebraspe and assunto.link_questoes_cebraspe != link_questoes_cebraspe:
                         assunto.link_questoes_cebraspe = link_questoes_cebraspe
                         atualizado = True
-                    if link_questoes_fgv and not assunto.link_questoes_fgv:
+                    if link_questoes_fgv and assunto.link_questoes_fgv != link_questoes_fgv:
                         assunto.link_questoes_fgv = link_questoes_fgv
                         atualizado = True
                     if dica and not assunto.dica:

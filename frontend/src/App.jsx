@@ -10,6 +10,12 @@ import CriarPlano from './pages/CriarPlano';
 import Planos from './pages/Planos';
 import MapaAssuntos from './pages/MapaAssuntos';
 import MeusPlanos from './pages/MeusPlanos';
+import MeusEstudos from './pages/MeusEstudos';
+import EscolherPlano from './pages/EscolherPlano';
+import ListaAlunos from './pages/ListaAlunos';
+import AlunoDetalhe from './pages/AlunoDetalhe';
+import DashboardAluno from './pages/DashboardAluno';
+import RankingAlunos from './pages/RankingAlunos';
 
 function App() {
   return (
@@ -87,6 +93,54 @@ function App() {
             element={
               <PrivateRoute>
                 <ConcursoView />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/meus-estudos/:concursoId"
+            element={
+              <PrivateRoute>
+                <MeusEstudos />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/escolher-plano"
+            element={
+              <PrivateRoute>
+                <EscolherPlano />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/alunos"
+            element={
+              <PrivateRoute>
+                <ListaAlunos />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/aluno/:alunoId"
+            element={
+              <PrivateRoute>
+                <AlunoDetalhe />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/meu-dashboard"
+            element={
+              <PrivateRoute>
+                <DashboardAluno />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/admin/ranking"
+            element={
+              <PrivateRoute>
+                <RankingAlunos />
               </PrivateRoute>
             }
           />

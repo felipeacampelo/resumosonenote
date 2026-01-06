@@ -253,14 +253,6 @@ const ConcursoView = () => {
                     )}
                   </div>
 
-                  {/* Dica */}
-                  {mapa.dica && (
-                    <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                      <p className="text-sm text-yellow-800">
-                        💡 <strong>Dica:</strong> {mapa.dica}
-                      </p>
-                    </div>
-                  )}
                 </div>
               </div>
             ))}

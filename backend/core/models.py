@@ -587,3 +587,213 @@ class MetadadosAssunto(TimeStampedModel):
         
         if errors:
             raise ValidationError(errors)
+
+
+class ProgressoAssunto(TimeStampedModel):
+    """
+    Registra o progresso do estudante em um assunto específico do mapa.
+    
+    Attributes:
+        usuario (ForeignKey): Usuário que está estudando
+        mapa_assunto (ForeignKey): Assunto do mapa que está sendo estudado
+        estudado (BooleanField): Se o assunto foi marcado como estudado
+        tempo_total_minutos (PositiveIntegerField): Tempo total de estudo em minutos
+        questoes_feitas (PositiveIntegerField): Total de questões feitas
+        questoes_acertadas (PositiveIntegerField): Total de questões acertadas
+        ultima_sessao (DateField): Data da última sessão de estudo
+    """
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='progressos',
+        verbose_name='Usuário'
+    )
+    mapa_assunto = models.ForeignKey(
+        MapaAssunto,
+        on_delete=models.CASCADE,
+        related_name='progressos',
+        verbose_name='Assunto do Mapa'
+    )
+    estudado = models.BooleanField(
+        'Estudado',
+        default=False,
+        help_text='Indica se o assunto foi marcado como estudado'
+    )
+    tempo_total_minutos = models.PositiveIntegerField(
+        'Tempo Total (minutos)',
+        default=0,
+        help_text='Tempo total de estudo em minutos'
+    )
+    questoes_feitas = models.PositiveIntegerField(
+        'Questões Feitas',
+        default=0,
+        help_text='Total de questões feitas'
+    )
+    questoes_acertadas = models.PositiveIntegerField(
+        'Questões Acertadas',
+        default=0,
+        help_text='Total de questões acertadas'
+    )
+    ultima_sessao = models.DateField(
+        'Última Sessão',
+        null=True,
+        blank=True,
+        help_text='Data da última sessão de estudo'
+    )
+    
+    class Meta:
+        verbose_name = 'Progresso do Assunto'
+        verbose_name_plural = 'Progressos dos Assuntos'
+        unique_together = ['usuario', 'mapa_assunto']
+        ordering = ['-ultima_sessao', '-updated_at']
+    
+    def __str__(self):
+        return f"{self.usuario.email} - {self.mapa_assunto.nome_completo}"
+    
+    @property
+    def percentual_acerto(self):
+        """Calcula o percentual de acerto nas questões"""
+        if self.questoes_feitas == 0:
+            return 0
+        return round((self.questoes_acertadas / self.questoes_feitas) * 100, 2)
+    
+    @property
+    def tempo_total_horas(self):
+        """Retorna o tempo total em horas"""
+        return round(self.tempo_total_minutos / 60, 2)
+
+
+class SessaoEstudo(TimeStampedModel):
+    """
+    Registra uma sessão individual de estudo.
+    
+    Cada vez que o estudante registra tempo/questões, cria-se uma nova sessão.
+    
+    Attributes:
+        progresso (ForeignKey): Progresso ao qual a sessão pertence
+        data (DateField): Data da sessão de estudo
+        tempo_minutos (PositiveIntegerField): Tempo estudado nesta sessão
+        questoes_feitas (PositiveIntegerField): Questões feitas nesta sessão
+        questoes_acertadas (PositiveIntegerField): Questões acertadas nesta sessão
+        observacoes (TextField): Observações sobre a sessão
+    """
+    progresso = models.ForeignKey(
+        ProgressoAssunto,
+        on_delete=models.CASCADE,
+        related_name='sessoes',
+        verbose_name='Progresso'
+    )
+    data = models.DateField(
+        'Data',
+        help_text='Data da sessão de estudo'
+    )
+    tempo_minutos = models.PositiveIntegerField(
+        'Tempo (minutos)',
+        default=0,
+        help_text='Tempo estudado nesta sessão em minutos'
+    )
+    questoes_feitas = models.PositiveIntegerField(
+        'Questões Feitas',
+        default=0,
+        help_text='Questões feitas nesta sessão'
+    )
+    questoes_acertadas = models.PositiveIntegerField(
+        'Questões Acertadas',
+        default=0,
+        help_text='Questões acertadas nesta sessão'
+    )
+    observacoes = models.TextField(
+        'Observações',
+        blank=True,
+        help_text='Observações sobre a sessão de estudo'
+    )
+    
+    class Meta:
+        verbose_name = 'Sessão de Estudo'
+        verbose_name_plural = 'Sessões de Estudo'
+        ordering = ['-data', '-created_at']
+    
+    def __str__(self):
+        return f"{self.progresso.usuario.email} - {self.data} - {self.progresso.mapa_assunto.nome_completo}"
+    
+    @property
+    def percentual_acerto(self):
+        """Calcula o percentual de acerto nas questões desta sessão"""
+        if self.questoes_feitas == 0:
+            return 0
+        return round((self.questoes_acertadas / self.questoes_feitas) * 100, 2)
+    
+    def save(self, *args, **kwargs):
+        """Atualiza o progresso total ao salvar a sessão"""
+        super().save(*args, **kwargs)
+        
+        # Atualizar totais do progresso
+        self.progresso.tempo_total_minutos = self.progresso.sessoes.aggregate(
+            total=models.Sum('tempo_minutos')
+        )['total'] or 0
+        
+        self.progresso.questoes_feitas = self.progresso.sessoes.aggregate(
+            total=models.Sum('questoes_feitas')
+        )['total'] or 0
+        
+        self.progresso.questoes_acertadas = self.progresso.sessoes.aggregate(
+            total=models.Sum('questoes_acertadas')
+        )['total'] or 0
+        
+        self.progresso.ultima_sessao = self.data
+        self.progresso.save()
+
+
+class PlanoAluno(TimeStampedModel):
+    """
+    Vincula um aluno a um plano/concurso específico.
+    
+    Cada aluno pode ter apenas um plano ativo por vez.
+    
+    Attributes:
+        usuario (ForeignKey): Aluno que escolheu o plano
+        concurso (ForeignKey): Concurso/plano escolhido
+        ativo (BooleanField): Se este é o plano ativo do aluno
+        data_inicio (DateField): Data em que o aluno começou o plano
+    """
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='planos_aluno',
+        verbose_name='Aluno'
+    )
+    concurso = models.ForeignKey(
+        Concurso,
+        on_delete=models.CASCADE,
+        related_name='alunos',
+        verbose_name='Concurso/Plano'
+    )
+    ativo = models.BooleanField(
+        'Ativo',
+        default=True,
+        help_text='Se este é o plano ativo do aluno'
+    )
+    data_inicio = models.DateField(
+        'Data de Início',
+        auto_now_add=True,
+        help_text='Data em que o aluno começou o plano'
+    )
+    
+    class Meta:
+        verbose_name = 'Plano do Aluno'
+        verbose_name_plural = 'Planos dos Alunos'
+        unique_together = ['usuario', 'concurso']
+        ordering = ['-ativo', '-data_inicio']
+    
+    def __str__(self):
+        return f"{self.usuario.email} - {self.concurso.nome}"
+    
+    def save(self, *args, **kwargs):
+        """Garante que apenas um plano esteja ativo por aluno"""
+        if self.ativo:
+            # Desativar outros planos do mesmo aluno
+            PlanoAluno.objects.filter(
+                usuario=self.usuario,
+                ativo=True
+            ).exclude(pk=self.pk).update(ativo=False)
+        super().save(*args, **kwargs)
